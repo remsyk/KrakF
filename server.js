@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const request = require('request');
 
 //https://codeburst.io/build-a-weather-website-in-30-minutes-with-node-js-express-openweather-a317f904897b
+//Test
 
 app.use(express.static('public'));
 app.set('view engine', 'ejs')
