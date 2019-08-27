@@ -1,39 +1,37 @@
-const kraken = require('node-kraken-api')
-const api = kraken()
-const express = require('express')
-const app = express()
-const bodyParser = require('body-parser');
+const kraken = require('node-kraken-api');
+const api = kraken();
 
+var http = require('http'),
+    fs = require('fs'),
+    // NEVER use a Sync function except at start-up!
+    index = fs.readFileSync(__dirname + '/views/index.html');
 
-var x;
-var test;
-app.use(express.static('public'));
-app.set('view engine', 'ejs');
-app.use(bodyParser.urlencoded({ extended: true }));
+// Send index.html to all requests
+var app = http.createServer(function(req, res) {
+    res.writeHead(200, {'Content-Type': 'text/html'});
+    res.end(index);
+});
 
+var io = require('socket.io').listen(app);
 
-let timerId = setInterval(() => test(), 5000);
-
-
-
-function test () {
-    app.get('/', function (req, res) {
-        res.render('index');
-
-        api.call('Time', (err, data) => {
-            if (err) console.error(err)
-            else x=data
-        })
-
-        app.post('/', function (req, res) {
-            let weather = JSON.parse(body);
-            let test = "tets test test";
-            res.render('index', {weather: x, error: null});
-        });
-    });
+function makeCall() {
+    api.call('Time', (err, data) => {
+        if (err){ console.error(err)}
+        else {
+            io.emit('time', { time: JSON.stringify(data) });
+        }
+    })
 }
 
+// Send current time every 10 secs
+setInterval(makeCall, 5000);
 
-app.listen(3000, function () {
-  console.log('listening on port 3000!')
+// Emit welcome message on connection
+io.on('connection', function(socket) {
+    // Use socket to communicate with this particular client only, sending it it's own id
+    socket.emit('welcome', { message: 'Loading...', id: socket.id });
+
+    socket.on('i am client', console.log);
 });
+
+app.listen(3000);
